@@ -27,6 +27,8 @@ class BugReportUITests: XCTestCase {
 
         XCTAssertFalse(app.images["screenshotImage"].exists)
         XCTAssertFalse(app.buttons["removeScreenshotButton"].exists)
+
+        app.assertScreenshot(.bugReport)
     }
 
     func testToggleSendingLogs() {
@@ -63,6 +65,8 @@ class BugReportUITests: XCTestCase {
         
         XCTAssert(app.images["screenshotImage"].exists)
         XCTAssert(app.buttons["removeScreenshotButton"].exists)
+
+        app.assertScreenshot(.bugReportWithScreenshot)
     }
 
     func verifyInitialStateComponents(in app: XCUIApplication) {
