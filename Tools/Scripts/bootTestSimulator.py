@@ -11,6 +11,8 @@ if len(sys.argv) != 2:
 
 simulator_name=sys.argv[1]
 
+os.system("/usr/bin/xcrun simctl list --json devices available")
+
 os_version='15-5'
 runtimes_map=subprocess.check_output("/usr/bin/xcrun simctl list --json devices available", shell=True)
 runtime='com.apple.CoreSimulator.SimRuntime.iOS-' + os_version
@@ -21,7 +23,7 @@ for device in devices:
     if device['name'] == simulator_name:
         UDID=device['udid']
         print("Found device UDID: " + UDID)
-        os.system("/usr/bin/xcrun simctl boot '" + UDID + "' > /dev/null 2>&1")
-        os.system("/usr/bin/xcrun simctl status_bar '" + UDID + "' override --time '2007-01-09T09:41:00+00:00' --dataNetwork 'wifi' --wifiMode 'active' --wifiBars 3 --cellularMode 'active' --cellularBars 4 --batteryState 'charged' --batteryLevel 100 > /dev/null 2>&1")
-        os.system("/usr/bin/xcrun simctl status_bar '" + UDID + "' override --time '09:41' > /dev/null 2>&1")
+        os.system("/usr/bin/xcrun simctl boot '" + UDID + "'")
+        os.system("/usr/bin/xcrun simctl status_bar '" + UDID + "' override --time '2007-01-09T09:41:00+00:00' --dataNetwork 'wifi' --wifiMode 'active' --wifiBars 3 --cellularMode 'active' --cellularBars 4 --batteryState 'charged' --batteryLevel 100")
+        os.system("/usr/bin/xcrun simctl status_bar '" + UDID + "' override --time '09:41'")
         break
