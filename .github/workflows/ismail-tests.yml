@@ -31,4 +31,4 @@ jobs:
           bundle install --jobs 4 --retry 3
       
       - name: Run tests
-        run: ./Tools/Scripts/bootTestSimulator 'iPhone 13 Pro Max'
+        run: python Tools/Scripts/bootTestSimulator.py 'iPhone 13 Pro Max'
