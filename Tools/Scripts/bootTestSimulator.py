@@ -11,9 +11,6 @@ if len(sys.argv) != 2:
 
 simulator_name=sys.argv[1]
 
-print("Started")
-os.system("/usr/bin/xcrun simctl list --json devices available")
-
 os_version='15-5'
 runtimes_map=subprocess.check_output("/usr/bin/xcrun simctl list --json devices available", shell=True)
 runtime='com.apple.CoreSimulator.SimRuntime.iOS-' + os_version
@@ -27,4 +24,5 @@ for device in devices:
         os.system("/usr/bin/xcrun simctl boot '" + UDID + "'")
         os.system("/usr/bin/xcrun simctl status_bar '" + UDID + "' override --time '2007-01-09T09:41:00+00:00' --dataNetwork 'wifi' --wifiMode 'active' --wifiBars 3 --cellularMode 'active' --cellularBars 4 --batteryState 'charged' --batteryLevel 100")
         os.system("/usr/bin/xcrun simctl status_bar '" + UDID + "' override --time '09:41'")
+        print("Simulator(" + UDID + ") booted and status bar overridden")
         break
