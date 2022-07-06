@@ -11,6 +11,7 @@ if len(sys.argv) != 2:
 
 simulator_name=sys.argv[1]
 
+print("Started")
 os.system("/usr/bin/xcrun simctl list --json devices available")
 
 os_version='15-5'
