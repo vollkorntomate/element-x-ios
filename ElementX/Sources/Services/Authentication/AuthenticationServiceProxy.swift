@@ -6,6 +6,7 @@
 //  Copyright © 2022 Element. All rights reserved.
 //
 
+import AppAuth
 import Foundation
 import MatrixRustSDK
 
@@ -20,6 +21,7 @@ class AuthenticationServiceProxy: AuthenticationServiceProxyProtocol {
     // MARK: Public
     
     private(set) var homeserver = LoginHomeserver(address: BuildSettings.defaultHomeserverURLString, loginMode: .unknown)
+    var oidcUserAgent: OIDExternalUserAgentIOS?
     
     // MARK: - Setup
     
@@ -54,6 +56,42 @@ class AuthenticationServiceProxy: AuthenticationServiceProxyProtocol {
             return .success(())
         case .failure(let error):
             return .failure(.invalidHomeserverAddress)
+        }
+    }
+    
+    func loginWithOIDC() async -> Result<UserSessionProtocol, AuthenticationServiceError> {
+        guard
+            let oidcUserAgent = oidcUserAgent,
+            case let .oidc(issuerURL) = homeserver.loginMode
+        else {
+            return .failure(.oidcError(.notSupported))
+        }
+        
+        let loginToken: String
+        do {
+            let oidcService = OIDCService(issuerURL: issuerURL)
+            let configuration = try await oidcService.metadata()
+            let registationResponse = try await oidcService.registerClient(metadata: configuration)
+            let authResponse = try await oidcService.presentWebAuthentication(metadata: configuration,
+                                                                              clientID: registationResponse.clientID,
+                                                                              scope: "openid",
+                                                                              userAgent: oidcUserAgent)
+            let tokenResponse = try await oidcService.redeemCodeForTokens(authResponse: authResponse)
+            
+            guard let accessToken = tokenResponse.accessToken else { return .failure(.oidcError(.unknown)) }
+            loginToken = accessToken
+        } catch let error as OIDCError {
+            return .failure(.oidcError(error))
+        } catch {
+            return .failure(.failedLoggingIn)
+        }
+        
+        do {
+            let client = try authenticationService.loginAccessToken(token: loginToken)
+            return await userSession(for: client)
+        } catch {
+            MXLog.debug(error)
+            return .failure(.failedLoggingIn)
         }
     }
     
