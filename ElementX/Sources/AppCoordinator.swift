@@ -7,6 +7,7 @@
 //
 
 import Combine
+import MatrixRustSDK
 import UIKit
 
 class AppCoordinator: AuthenticationCoordinatorDelegate, Coordinator {
@@ -73,6 +74,7 @@ class AppCoordinator: AuthenticationCoordinatorDelegate, Coordinator {
         
         let loggerConfiguration = MXLogConfiguration()
         loggerConfiguration.logLevel = .verbose
+        setupTracing(configuration: "info,hyper=warn,sled=warn,matrix_sdk_sled=warn")
         // Redirect NSLogs to files only if we are not debugging
         if isatty(STDERR_FILENO) == 0 {
             loggerConfiguration.redirectLogsToFiles = true

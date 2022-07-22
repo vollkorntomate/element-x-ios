@@ -23,10 +23,13 @@ private class WeakClientProxyWrapper: ClientDelegate {
     }
 }
 
-class ClientProxy: ClientProxyProtocol {
+class ClientProxy: ClientProxyProtocol, SlidingSyncDelegate, SlidingSyncViewRoomsCountDelegate, SlidingSyncViewRoomsListDelegate, SlidingSyncViewStateDelegate {
     private let client: Client
     private let backgroundTaskService: BackgroundTaskServiceProtocol
     private var sessionVerificationControllerProxy: SessionVerificationControllerProxy?
+    
+    private let slidingSync: SlidingSync
+    private let slidingSyncView: SlidingSyncView
     
     private(set) var rooms: [RoomProxy] = [] {
         didSet {
@@ -45,10 +48,34 @@ class ClientProxy: ClientProxyProtocol {
         self.client = client
         self.backgroundTaskService = backgroundTaskService
         
+        do {
+            let slidingSyncBuilder = try client.slidingSync().homeserver(url: "https://slidingsync.lab.element.dev")
+            
+            slidingSyncView = try SlidingSyncViewBuilder()
+                .name(name: "HomeScreen")
+//                .sort(sort: ["by_recency"])
+                .syncMode(mode: .fullSync)
+                .build()
+            
+            slidingSync = try slidingSyncBuilder
+                .addView(view: slidingSyncView)
+                .build()
+            
+            slidingSyncView.onRoomsCountUpdate(update: self)
+            slidingSyncView.onRoomsUpdate(update: self)
+            slidingSyncView.onStateUpdate(update: self)
+            
+            slidingSync.onUpdate(update: self)
+            slidingSync.startSync()
+            
+        } catch {
+            fatalError("Failed configuring sliding sync")
+        }
+        
         client.setDelegate(delegate: WeakClientProxyWrapper(clientProxy: self))
         
         Benchmark.startTrackingForIdentifier("ClientSync", message: "Started sync.")
-        client.startSync()
+//        client.startSync()
         
         Task { await updateRooms() }
     }
@@ -107,7 +134,32 @@ class ClientProxy: ClientProxyProtocol {
         .value
     }
     
-    // MARK: Private
+    // MARK: - SlidingSyncViewStateDelegate
+    
+    func didReceiveUpdate(newState: SlidingSyncState) {
+        MXLog.debug("Received sliding sync view state update: \(newState)")
+    }
+    
+    // MARK: - SlidingSyncViewRoomsListDelegate
+    
+    func didReceiveUpdate(diff: SlidingSyncViewRoomsListDiff) {
+        MXLog.debug("Received sliding sync view room list diff: \(diff)")
+        slidingSyncView.currentRoomsList()
+    }
+    
+    // MARK: - SlidingSyncViewRoomsCountDelegate
+    
+    func didReceiveUpdate(count: UInt32) {
+        MXLog.debug("Received sliding sync view count update: \(count)")
+    }
+    
+    // MARK: - SlidingSyncDelegate
+    
+    func didReceiveSyncUpdate(summary: UpdateSummary) {
+        MXLog.debug("Received sliding sync update: \(summary)")
+    }
+    
+    // MARK: - Private
     
     fileprivate func didReceiveSyncUpdate() {
         Benchmark.logElapsedDurationForIdentifier("ClientSync", message: "Received sync update")
